@@ -21,4 +21,4 @@ follower_arms:
     gripper_type: "crank_4310"
 
 teleop:
-  bilateral_kp: 0.2
+  bilateral_kp: 0.05

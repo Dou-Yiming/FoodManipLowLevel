@@ -138,7 +138,10 @@ class DMSingleMotorCanInterface(CanInterface):
         id = motor_id  # self._get_frame_id(motor_id)
         data = [0xFF] * 7 + [0xFC]
 
-        message = self._send_message_get_response(id, motor_id, data)
+        self.flush_receive_buffer()
+        message = self._send_message_get_response(
+            id, motor_id, data, max_retry=20, receive_timeout=0.4
+        )
 
         # dummy motor type just check motor status
         motor_info = self.parse_recv_message(message, MotorType.DM4310, ignore_error=True)
@@ -150,7 +153,9 @@ class DMSingleMotorCanInterface(CanInterface):
                 logging.info(f"motor {motor_id} error cleaned")
                 # enable again
 
-                message = self._send_message_get_response(id, motor_id, data)
+                message = self._send_message_get_response(
+                    id, motor_id, data, max_retry=20, receive_timeout=0.4
+                )
                 motor_info = self.parse_recv_message(message, motor_type, ignore_error=True)
         else:
             logging.info(f"motor {motor_id} is already on")
@@ -460,11 +465,11 @@ class DMChainCanInterface(MotorChain):
 
     def _motor_on(self) -> None:
         motor_feedback = []
-        for _ in range(7):
-            self.motor_interface.try_receive_message(timeout=0.001)
+        self.motor_interface.flush_receive_buffer(duration=0.1)
         for motor_id, motor_type in self.motor_list:
             logging.info(f"Turning on motor_id: {motor_id}, motor_type: {motor_type}")
-            time.sleep(0.003)
+            self.motor_interface.flush_receive_buffer(duration=0.02)
+            time.sleep(0.01)
             motor_feedback.append(self.motor_interface.motor_on(motor_id, motor_type))
         self._update_absolute_positions(motor_feedback)
         self.state = motor_feedback
@@ -619,6 +624,11 @@ class DMChainCanInterface(MotorChain):
 
     def close(self) -> None:
         self.running = False
+        if getattr(self, "motor_interface", None) is not None:
+            try:
+                self.motor_interface.close()
+            except Exception as e:
+                logging.warning("Failed to close CAN on %s: %s", self.channel, e)
 
 
 class MultiDMChainCanInterface(MotorChain):

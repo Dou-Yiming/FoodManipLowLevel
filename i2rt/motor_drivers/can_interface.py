@@ -32,8 +32,25 @@ class CanInterface:
             self.notifier.stop()
         self.bus.shutdown()
 
+    def flush_receive_buffer(self, duration: float = 0.05) -> None:
+        """Discard pending frames so the next command/response pair is not conflated."""
+        deadline = time.time() + duration
+        while time.time() < deadline:
+            if self.use_buffered_reader:
+                msg = self.buffered_reader.get_message(timeout=0.001)
+            else:
+                msg = self.bus.recv(timeout=0.001)
+            if msg is None:
+                break
+
     def _send_message_get_response(
-        self, id: int, motor_id: int, data: List[int], max_retry: int = 5, expected_id: Optional[int] = None
+        self,
+        id: int,
+        motor_id: int,
+        data: List[int],
+        max_retry: int = 5,
+        expected_id: Optional[int] = None,
+        receive_timeout: float = 0.2,
     ) -> can.Message:
         """Send a message over the CAN bus.
 
@@ -48,7 +65,7 @@ class CanInterface:
         for _ in range(max_retry):
             try:
                 self.bus.send(message)
-                response = self._receive_message(motor_id, timeout=0.2)
+                response = self._receive_message(motor_id, timeout=receive_timeout)
 
                 if expected_id is None:
                     expected_id = self.receive_mode.get_receive_id(motor_id)

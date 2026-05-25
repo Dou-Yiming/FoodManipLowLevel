@@ -1,0 +1,4 @@
+# Default follower "home" pose for deploy.py shutdown (7 joints: 6 arm + gripper).
+# Tune per task/workspace. Values below are wire_insert dataset medians (q50).
+Fleft: [-0.770, 0.912, 1.259, -0.970, 0.029, -0.495, 0.667]
+Fright: [0.588, 1.422, 1.429, -0.980, -0.225, 0.117, 0.542]

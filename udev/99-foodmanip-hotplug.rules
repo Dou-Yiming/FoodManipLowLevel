@@ -1,0 +1,3 @@
+# Auto-run setup when a CAN network interface appears (USB CAN adapters).
+# Install with: sudo bash scripts/install_hotplug_setup.sh
+SUBSYSTEM=="net", ACTION=="add", KERNEL=="can*", RUN+="/usr/local/bin/foodmanip-setup-devices"
